@@ -1,21 +1,12 @@
--- ╔══════════════════════════════════════════════════════════╗
--- ║           BLOOD LIBRARY v1.0 - by Claude               ║
--- ║         Premium Dark Red Roblox UI Library             ║
--- ╚══════════════════════════════════════════════════════════╝
-
 local BloodLibrary = {}
 BloodLibrary.__index = BloodLibrary
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 
--- ══════════════════════════════════════
--- THEME
--- ══════════════════════════════════════
 local Theme = {
     Background    = Color3.fromRGB(10, 4, 4),
     BackgroundAlt = Color3.fromRGB(18, 6, 6),
@@ -46,9 +37,6 @@ local TweenInfo_Default = TweenInfo.new(0.18, Enum.EasingStyle.Quint, Enum.Easin
 local TweenInfo_Fast    = TweenInfo.new(0.10, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
 local TweenInfo_Slow    = TweenInfo.new(0.30, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
 
--- ══════════════════════════════════════
--- UTILITIES
--- ══════════════════════════════════════
 local function Tween(obj, props, info)
     TweenService:Create(obj, info or TweenInfo_Default, props):Play()
 end
@@ -100,9 +88,7 @@ end
 
 local function Make(class, props)
     local obj = Instance.new(class)
-    for k, v in pairs(props) do
-        obj[k] = v
-    end
+    for k, v in pairs(props) do obj[k] = v end
     return obj
 end
 
@@ -122,19 +108,17 @@ local function Ripple(button)
     task.delay(0.3, function() ripple:Destroy() end)
 end
 
--- ══════════════════════════════════════
--- NOTIFICATION SYSTEM
--- ══════════════════════════════════════
 local NotifHolder = nil
 
 local function InitNotifHolder()
     if NotifHolder and NotifHolder.Parent then return end
+    local ok, cg = pcall(function() return CoreGui end)
     NotifHolder = Make("Frame", {
         Name = "BloodNotifHolder",
         Size = UDim2.new(0, 280, 1, 0),
         Position = UDim2.new(1, -295, 0, 0),
         BackgroundTransparency = 1,
-        Parent = (pcall(function() return CoreGui end) and CoreGui) or LocalPlayer.PlayerGui,
+        Parent = ok and cg or LocalPlayer.PlayerGui,
     })
     AddListLayout(NotifHolder, 8, Enum.FillDirection.Vertical)
     local pad = Instance.new("UIPadding")
@@ -145,19 +129,16 @@ end
 local function Notify(title, message, duration)
     InitNotifHolder()
     duration = duration or 4
-
     local notif = Make("Frame", {
         Name = "BloodNotif",
         Size = UDim2.new(1, 0, 0, 0),
         BackgroundColor3 = Theme.NotifBg,
-        BackgroundTransparency = 0,
         ClipsDescendants = true,
         Parent = NotifHolder,
     })
     AddCorner(notif, 8)
     AddStroke(notif, Theme.Accent, 1, 0.2)
     AddGradient(notif, Theme.TitleBar, Theme.Background, 135)
-
     local accentBar = Make("Frame", {
         Size = UDim2.new(0, 3, 1, 0),
         BackgroundColor3 = Theme.AccentBright,
@@ -165,7 +146,6 @@ local function Notify(title, message, duration)
         Parent = notif,
     })
     AddCorner(accentBar, 3)
-
     local inner = Make("Frame", {
         Size = UDim2.new(1, -15, 1, 0),
         Position = UDim2.new(0, 12, 0, 0),
@@ -173,8 +153,7 @@ local function Notify(title, message, duration)
         Parent = notif,
     })
     AddPadding(inner, 8, 8, 4, 4)
-
-    local titleLbl = Make("TextLabel", {
+    Make("TextLabel", {
         Size = UDim2.new(1, 0, 0, 18),
         BackgroundTransparency = 1,
         Text = title or "Notification",
@@ -184,7 +163,6 @@ local function Notify(title, message, duration)
         TextXAlignment = Enum.TextXAlignment.Left,
         Parent = inner,
     })
-
     local msgLbl = Make("TextLabel", {
         Size = UDim2.new(1, 0, 0, 0),
         Position = UDim2.new(0, 0, 0, 22),
@@ -198,10 +176,7 @@ local function Notify(title, message, duration)
         Parent = inner,
     })
     msgLbl.Size = UDim2.new(1, 0, 0, msgLbl.TextBounds.Y + 2)
-
-    local totalHeight = 22 + msgLbl.TextBounds.Y + 22
-    Tween(notif, {Size = UDim2.new(1, 0, 0, totalHeight)}, TweenInfo_Default)
-
+    Tween(notif, {Size = UDim2.new(1, 0, 0, 22 + msgLbl.TextBounds.Y + 22)}, TweenInfo_Default)
     local progressBg = Make("Frame", {
         Size = UDim2.new(1, 0, 0, 2),
         Position = UDim2.new(0, 0, 1, -2),
@@ -216,37 +191,31 @@ local function Notify(title, message, duration)
         Parent = progressBg,
     })
     Tween(progressBar, {Size = UDim2.new(0, 0, 1, 0)}, TweenInfo.new(duration, Enum.EasingStyle.Linear))
-
     task.delay(duration, function()
         Tween(notif, {BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0)}, TweenInfo_Default)
         task.delay(0.2, function() notif:Destroy() end)
     end)
 end
 
--- ══════════════════════════════════════
--- MAIN LIBRARY INIT
--- ══════════════════════════════════════
 function BloodLibrary:New(title, options)
     options = options or {}
     local minSize = options.MinSize or Vector2.new(500, 360)
     local toggleKey = options.ToggleKey or Enum.KeyCode.RightShift
 
-    -- Destroy old instance
     local old = CoreGui:FindFirstChild("BloodLibrary")
     if old then old:Destroy() end
 
+    local ok, cg = pcall(function() return CoreGui end)
     local ScreenGui = Make("ScreenGui", {
         Name = "BloodLibrary",
         ResetOnSpawn = false,
         ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-        Parent = (pcall(function() return CoreGui end) and CoreGui) or LocalPlayer.PlayerGui,
+        Parent = ok and cg or LocalPlayer.PlayerGui,
     })
 
-    -- ── SHADOW ──
     local Shadow = Make("ImageLabel", {
         Size = UDim2.new(0, minSize.X + 40, 0, minSize.Y + 40),
         Position = UDim2.new(0, 60, 0, 60),
-        AnchorPoint = Vector2.new(0, 0),
         BackgroundTransparency = 1,
         Image = "rbxassetid://6014261993",
         ImageColor3 = Color3.fromRGB(0, 0, 0),
@@ -257,7 +226,6 @@ function BloodLibrary:New(title, options)
         Parent = ScreenGui,
     })
 
-    -- ── MAIN WINDOW ──
     local Window = Make("Frame", {
         Name = "Window",
         Size = UDim2.new(0, minSize.X, 0, minSize.Y),
@@ -272,7 +240,6 @@ function BloodLibrary:New(title, options)
     AddStroke(Window, Theme.Border, 1.5, 0.2)
     AddGradient(Window, Theme.Background, Theme.BackgroundAlt, 135)
 
-    -- ── TITLE BAR ──
     local TitleBar = Make("Frame", {
         Name = "TitleBar",
         Size = UDim2.new(1, 0, 0, 36),
@@ -283,7 +250,6 @@ function BloodLibrary:New(title, options)
     })
     AddGradient(TitleBar, Theme.TitleBar, Theme.TitleBarEnd, 90)
 
-    -- Accent line under title bar
     local AccentLine = Make("Frame", {
         Size = UDim2.new(1, 0, 0, 2),
         Position = UDim2.new(0, 0, 1, -2),
@@ -294,20 +260,19 @@ function BloodLibrary:New(title, options)
     })
     AddGradient(AccentLine, Theme.AccentBright, Theme.AccentDark, 90)
 
-    -- Blood drip dots (decorative)
     for i = 1, 3 do
-        Make("Frame", {
+        local dot = Make("Frame", {
             Size = UDim2.new(0, 6, 0, 6),
             Position = UDim2.new(0, 8 + (i-1) * 14, 0.5, -3),
-            BackgroundColor3 = i == 1 and Color3.fromRGB(255, 60, 60) or i == 2 and Color3.fromRGB(200, 0, 0) or Color3.fromRGB(120, 0, 0),
+            BackgroundColor3 = i == 1 and Color3.fromRGB(255,60,60) or i == 2 and Color3.fromRGB(200,0,0) or Color3.fromRGB(120,0,0),
             BorderSizePixel = 0,
             ZIndex = 3,
             Parent = TitleBar,
         })
-        AddCorner(TitleBar:GetChildren()[TitleBar:FindFirstChildOfClass("UICorner") and #TitleBar:GetChildren() or #TitleBar:GetChildren()], 999)
+        AddCorner(dot, 999)
     end
 
-    local TitleLabel = Make("TextLabel", {
+    Make("TextLabel", {
         Size = UDim2.new(1, -120, 1, 0),
         Position = UDim2.new(0, 55, 0, 0),
         BackgroundTransparency = 1,
@@ -320,7 +285,6 @@ function BloodLibrary:New(title, options)
         Parent = TitleBar,
     })
 
-    -- Minimize button
     local MinimizeBtn = Make("TextButton", {
         Size = UDim2.new(0, 28, 0, 20),
         Position = UDim2.new(1, -32, 0.5, -10),
@@ -336,9 +300,7 @@ function BloodLibrary:New(title, options)
     })
     AddCorner(MinimizeBtn, 5)
 
-    -- ── TAB BAR ──
     local TabBar = Make("Frame", {
-        Name = "TabBar",
         Size = UDim2.new(1, 0, 0, 30),
         Position = UDim2.new(0, 0, 0, 36),
         BackgroundColor3 = Theme.BackgroundAlt,
@@ -346,7 +308,7 @@ function BloodLibrary:New(title, options)
         ZIndex = 2,
         Parent = Window,
     })
-    local TabBarLine = Make("Frame", {
+    Make("Frame", {
         Size = UDim2.new(1, 0, 0, 1),
         Position = UDim2.new(0, 0, 1, -1),
         BackgroundColor3 = Theme.Border,
@@ -374,9 +336,7 @@ function BloodLibrary:New(title, options)
     local TabLayout = AddListLayout(TabButtonHolder, 4, Enum.FillDirection.Horizontal)
     TabLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 
-    -- ── CONTENT AREA ──
     local ContentArea = Make("Frame", {
-        Name = "ContentArea",
         Size = UDim2.new(1, 0, 1, -68),
         Position = UDim2.new(0, 0, 0, 68),
         BackgroundTransparency = 1,
@@ -385,9 +345,6 @@ function BloodLibrary:New(title, options)
         Parent = Window,
     })
 
-    -- ══════════════════════════════════════
-    -- DRAGGING
-    -- ══════════════════════════════════════
     local dragging, dragStart, startPos = false, nil, nil
     TitleBar.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -404,56 +361,38 @@ function BloodLibrary:New(title, options)
     UserInputService.InputChanged:Connect(function(input)
         if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
             local delta = input.Position - dragStart
-            Window.Position = UDim2.new(
-                startPos.X.Scale, startPos.X.Offset + delta.X,
-                startPos.Y.Scale, startPos.Y.Offset + delta.Y
-            )
-            Shadow.Position = UDim2.new(
-                Window.Position.X.Scale, Window.Position.X.Offset - 20,
-                Window.Position.Y.Scale, Window.Position.Y.Offset - 20
-            )
+            Window.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            Shadow.Position = UDim2.new(Window.Position.X.Scale, Window.Position.X.Offset - 20, Window.Position.Y.Scale, Window.Position.Y.Offset - 20)
         end
     end)
 
-    -- ══════════════════════════════════════
-    -- MINIMIZE
-    -- ══════════════════════════════════════
     local minimized = false
-    local fullHeight = minSize.Y
     MinimizeBtn.MouseButton1Click:Connect(function()
         minimized = not minimized
         if minimized then
             Tween(Window, {Size = UDim2.new(0, minSize.X, 0, 36)}, TweenInfo_Default)
             MinimizeBtn.Text = "+"
         else
-            Tween(Window, {Size = UDim2.new(0, minSize.X, 0, fullHeight)}, TweenInfo_Default)
+            Tween(Window, {Size = UDim2.new(0, minSize.X, 0, minSize.Y)}, TweenInfo_Default)
             MinimizeBtn.Text = "—"
         end
     end)
 
-    -- ══════════════════════════════════════
-    -- TOGGLE VISIBILITY
-    -- ══════════════════════════════════════
     UserInputService.InputBegan:Connect(function(input, processed)
         if not processed and input.KeyCode == toggleKey then
             ScreenGui.Enabled = not ScreenGui.Enabled
         end
     end)
 
-    -- ══════════════════════════════════════
-    -- TAB SYSTEM
-    -- ══════════════════════════════════════
     local tabs = {}
     local activeTab = nil
-
     local WindowObj = {}
 
-    function WindowObj:Notify(title, message, duration)
-        Notify(title, message, duration)
+    function WindowObj:Notify(t, m, d)
+        Notify(t, m, d)
     end
 
     function WindowObj:AddTab(name)
-        -- Tab button
         local TabBtn = Make("TextButton", {
             Size = UDim2.new(0, 80, 0, 22),
             BackgroundColor3 = Theme.TabInactive,
@@ -469,7 +408,6 @@ function BloodLibrary:New(title, options)
         })
         AddCorner(TabBtn, 5)
 
-        -- Auto resize tab button
         task.defer(function()
             TabBtn.Size = UDim2.new(0, TabBtn.TextBounds.X + 20, 0, 22)
             local total = 0
@@ -480,7 +418,6 @@ function BloodLibrary:New(title, options)
             TabScroll.CanvasSize = UDim2.new(0, total, 1, 0)
         end)
 
-        -- Tab page (scrolling frame)
         local TabPage = Make("ScrollingFrame", {
             Size = UDim2.new(1, 0, 1, 0),
             BackgroundTransparency = 1,
@@ -499,7 +436,6 @@ function BloodLibrary:New(title, options)
             TabPage.CanvasSize = UDim2.new(0, 0, 0, PageLayout.AbsoluteContentSize.Y + 16)
         end)
 
-        -- Tab select logic
         local function SelectTab()
             if activeTab then
                 Tween(activeTab.btn, {BackgroundColor3 = Theme.TabInactive, TextColor3 = Theme.TabTextDim}, TweenInfo_Fast)
@@ -525,14 +461,10 @@ function BloodLibrary:New(title, options)
         if #tabs == 0 then SelectTab() end
         table.insert(tabs, {btn = TabBtn, page = TabPage})
 
-        -- ══════════════════════════════════════
-        -- TAB METHODS
-        -- ══════════════════════════════════════
         local Tab = {}
 
         function Tab:Show() SelectTab() end
 
-        -- ── SECTION LABEL ──
         function Tab:AddSection(text)
             local Section = Make("Frame", {
                 Size = UDim2.new(1, 0, 0, 24),
@@ -540,7 +472,7 @@ function BloodLibrary:New(title, options)
                 ZIndex = 3,
                 Parent = TabPage,
             })
-            local Line = Make("Frame", {
+            Make("Frame", {
                 Size = UDim2.new(1, 0, 0, 1),
                 Position = UDim2.new(0, 0, 0.5, 0),
                 BackgroundColor3 = Theme.BorderDim,
@@ -548,7 +480,7 @@ function BloodLibrary:New(title, options)
                 ZIndex = 3,
                 Parent = Section,
             })
-            local SectionLabel = Make("TextLabel", {
+            local lbl = Make("TextLabel", {
                 Size = UDim2.new(0, 0, 1, 0),
                 AnchorPoint = Vector2.new(0.5, 0),
                 Position = UDim2.new(0.5, 0, 0, 0),
@@ -565,7 +497,6 @@ function BloodLibrary:New(title, options)
             return Section
         end
 
-        -- ── LABEL ──
         function Tab:AddLabel(text)
             local Label = Make("TextLabel", {
                 Size = UDim2.new(1, 0, 0, 20),
@@ -581,7 +512,6 @@ function BloodLibrary:New(title, options)
             return Label
         end
 
-        -- ── BUTTON ──
         function Tab:AddButton(text, callback)
             callback = callback or function() end
             local Btn = Make("TextButton", {
@@ -597,8 +527,7 @@ function BloodLibrary:New(title, options)
             AddCorner(Btn, 6)
             AddStroke(Btn, Theme.BorderDim, 1, 0.4)
             AddGradient(Btn, Theme.ElementBg, Theme.BackgroundAlt, 90)
-
-            local BtnLabel = Make("TextLabel", {
+            Make("TextLabel", {
                 Size = UDim2.new(1, 0, 1, 0),
                 BackgroundTransparency = 1,
                 Text = text or "Button",
@@ -608,25 +537,15 @@ function BloodLibrary:New(title, options)
                 ZIndex = 4,
                 Parent = Btn,
             })
-
-            Btn.MouseEnter:Connect(function()
-                Tween(Btn, {BackgroundColor3 = Theme.ElementHover}, TweenInfo_Fast)
-            end)
-            Btn.MouseLeave:Connect(function()
-                Tween(Btn, {BackgroundColor3 = Theme.ElementBg}, TweenInfo_Fast)
-            end)
-            Btn.MouseButton1Click:Connect(function()
-                Ripple(Btn)
-                pcall(callback)
-            end)
+            Btn.MouseEnter:Connect(function() Tween(Btn, {BackgroundColor3 = Theme.ElementHover}, TweenInfo_Fast) end)
+            Btn.MouseLeave:Connect(function() Tween(Btn, {BackgroundColor3 = Theme.ElementBg}, TweenInfo_Fast) end)
+            Btn.MouseButton1Click:Connect(function() Ripple(Btn) pcall(callback) end)
             return Btn
         end
 
-        -- ── TOGGLE ──
         function Tab:AddToggle(text, default, callback)
             callback = callback or function() end
             local state = default or false
-
             local Row = Make("Frame", {
                 Size = UDim2.new(1, 0, 0, 32),
                 BackgroundColor3 = Theme.ElementBg,
@@ -636,8 +555,7 @@ function BloodLibrary:New(title, options)
             })
             AddCorner(Row, 6)
             AddStroke(Row, Theme.BorderDim, 1, 0.4)
-
-            local ToggleLabel = Make("TextLabel", {
+            Make("TextLabel", {
                 Size = UDim2.new(1, -58, 1, 0),
                 Position = UDim2.new(0, 10, 0, 0),
                 BackgroundTransparency = 1,
@@ -649,8 +567,6 @@ function BloodLibrary:New(title, options)
                 ZIndex = 4,
                 Parent = Row,
             })
-
-            -- Switch track
             local Track = Make("Frame", {
                 Size = UDim2.new(0, 36, 0, 18),
                 Position = UDim2.new(1, -46, 0.5, -9),
@@ -661,8 +577,6 @@ function BloodLibrary:New(title, options)
             })
             AddCorner(Track, 9)
             AddStroke(Track, Theme.Border, 1, 0.3)
-
-            -- Switch knob
             local Knob = Make("Frame", {
                 Size = UDim2.new(0, 12, 0, 12),
                 Position = state and UDim2.new(1, -15, 0.5, -6) or UDim2.new(0, 3, 0.5, -6),
@@ -672,9 +586,7 @@ function BloodLibrary:New(title, options)
                 Parent = Track,
             })
             AddCorner(Knob, 999)
-
             local ToggleObj = {}
-
             local function SetState(val)
                 state = val
                 if state then
@@ -686,33 +598,22 @@ function BloodLibrary:New(title, options)
                 end
                 pcall(callback, state)
             end
-
             Row.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                    SetState(not state)
-                end
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then SetState(not state) end
             end)
-            Row.MouseEnter:Connect(function()
-                Tween(Row, {BackgroundColor3 = Theme.ElementHover}, TweenInfo_Fast)
-            end)
-            Row.MouseLeave:Connect(function()
-                Tween(Row, {BackgroundColor3 = Theme.ElementBg}, TweenInfo_Fast)
-            end)
-
+            Row.MouseEnter:Connect(function() Tween(Row, {BackgroundColor3 = Theme.ElementHover}, TweenInfo_Fast) end)
+            Row.MouseLeave:Connect(function() Tween(Row, {BackgroundColor3 = Theme.ElementBg}, TweenInfo_Fast) end)
             function ToggleObj:Set(val) SetState(val) end
             function ToggleObj:Get() return state end
-
             return ToggleObj
         end
 
-        -- ── SLIDER ──
         function Tab:AddSlider(text, min, max, default, callback)
             callback = callback or function() end
             min = min or 0
             max = max or 100
             local value = default or min
             local draggingSlider = false
-
             local Container = Make("Frame", {
                 Size = UDim2.new(1, 0, 0, 48),
                 BackgroundColor3 = Theme.ElementBg,
@@ -722,7 +623,6 @@ function BloodLibrary:New(title, options)
             })
             AddCorner(Container, 6)
             AddStroke(Container, Theme.BorderDim, 1, 0.4)
-
             local TopRow = Make("Frame", {
                 Size = UDim2.new(1, -16, 0, 22),
                 Position = UDim2.new(0, 8, 0, 4),
@@ -730,8 +630,7 @@ function BloodLibrary:New(title, options)
                 ZIndex = 4,
                 Parent = Container,
             })
-
-            local SliderLabel = Make("TextLabel", {
+            Make("TextLabel", {
                 Size = UDim2.new(0.7, 0, 1, 0),
                 BackgroundTransparency = 1,
                 Text = text or "Slider",
@@ -742,7 +641,6 @@ function BloodLibrary:New(title, options)
                 ZIndex = 4,
                 Parent = TopRow,
             })
-
             local ValueLabel = Make("TextLabel", {
                 Size = UDim2.new(0.3, 0, 1, 0),
                 Position = UDim2.new(0.7, 0, 0, 0),
@@ -755,19 +653,15 @@ function BloodLibrary:New(title, options)
                 ZIndex = 4,
                 Parent = TopRow,
             })
-
-            -- Track
             local TrackBg = Make("Frame", {
                 Size = UDim2.new(1, -16, 0, 6),
                 Position = UDim2.new(0, 8, 0, 34),
                 BackgroundColor3 = Theme.SliderBg,
                 BorderSizePixel = 0,
-                ClipsDescendants = false,
                 ZIndex = 4,
                 Parent = Container,
             })
             AddCorner(TrackBg, 3)
-
             local TrackFill = Make("Frame", {
                 Size = UDim2.new((value - min) / (max - min), 0, 1, 0),
                 BackgroundColor3 = Theme.SliderFill,
@@ -777,8 +671,6 @@ function BloodLibrary:New(title, options)
             })
             AddCorner(TrackFill, 3)
             AddGradient(TrackFill, Theme.AccentBright, Theme.Accent, 90)
-
-            -- Knob
             local SliderKnob = Make("Frame", {
                 Size = UDim2.new(0, 14, 0, 14),
                 AnchorPoint = Vector2.new(0.5, 0.5),
@@ -790,9 +682,7 @@ function BloodLibrary:New(title, options)
             })
             AddCorner(SliderKnob, 999)
             AddStroke(SliderKnob, Theme.AccentBright, 1.5, 0.2)
-
             local SliderObj = {}
-
             local function UpdateSlider(v)
                 v = math.clamp(math.floor(v), min, max)
                 value = v
@@ -802,7 +692,6 @@ function BloodLibrary:New(title, options)
                 ValueLabel.Text = tostring(v)
                 pcall(callback, v)
             end
-
             TrackBg.InputBegan:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.MouseButton1 then
                     draggingSlider = true
@@ -811,9 +700,7 @@ function BloodLibrary:New(title, options)
                 end
             end)
             UserInputService.InputEnded:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                    draggingSlider = false
-                end
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then draggingSlider = false end
             end)
             UserInputService.InputChanged:Connect(function(input)
                 if draggingSlider and input.UserInputType == Enum.UserInputType.MouseMovement then
@@ -821,20 +708,16 @@ function BloodLibrary:New(title, options)
                     UpdateSlider(min + alpha * (max - min))
                 end
             end)
-
             function SliderObj:Set(v) UpdateSlider(v) end
             function SliderObj:Get() return value end
-
             return SliderObj
         end
 
-        -- ── DROPDOWN ──
         function Tab:AddDropdown(text, options, callback)
             callback = callback or function() end
             options = options or {}
             local selected = nil
             local open = false
-
             local Container = Make("Frame", {
                 Size = UDim2.new(1, 0, 0, 32),
                 BackgroundColor3 = Theme.ElementBg,
@@ -845,7 +728,6 @@ function BloodLibrary:New(title, options)
             })
             AddCorner(Container, 6)
             AddStroke(Container, Theme.BorderDim, 1, 0.4)
-
             local Header = Make("TextButton", {
                 Size = UDim2.new(1, 0, 0, 32),
                 BackgroundTransparency = 1,
@@ -855,7 +737,6 @@ function BloodLibrary:New(title, options)
                 ZIndex = 11,
                 Parent = Container,
             })
-
             local HeaderLabel = Make("TextLabel", {
                 Size = UDim2.new(1, -40, 1, 0),
                 Position = UDim2.new(0, 10, 0, 0),
@@ -868,7 +749,6 @@ function BloodLibrary:New(title, options)
                 ZIndex = 12,
                 Parent = Header,
             })
-
             local Arrow = Make("TextLabel", {
                 Size = UDim2.new(0, 20, 1, 0),
                 Position = UDim2.new(1, -25, 0, 0),
@@ -880,7 +760,6 @@ function BloodLibrary:New(title, options)
                 ZIndex = 12,
                 Parent = Header,
             })
-
             local DropFrame = Make("Frame", {
                 Size = UDim2.new(1, 0, 0, 0),
                 Position = UDim2.new(0, 0, 0, 34),
@@ -892,7 +771,6 @@ function BloodLibrary:New(title, options)
             })
             AddCorner(DropFrame, 6)
             AddStroke(DropFrame, Theme.Border, 1, 0.3)
-
             local DropScroll = Make("ScrollingFrame", {
                 Size = UDim2.new(1, 0, 1, 0),
                 BackgroundTransparency = 1,
@@ -908,16 +786,13 @@ function BloodLibrary:New(title, options)
             DropLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
                 DropScroll.CanvasSize = UDim2.new(0, 0, 0, DropLayout.AbsoluteContentSize.Y + 8)
             end)
-
             local DropObj = {}
-
             local function CloseDropdown()
                 open = false
                 Tween(DropFrame, {Size = UDim2.new(1, 0, 0, 0)}, TweenInfo_Default)
                 Tween(Container, {Size = UDim2.new(1, 0, 0, 32)}, TweenInfo_Default)
                 Tween(Arrow, {Rotation = 0}, TweenInfo_Fast)
             end
-
             local function OpenDropdown()
                 open = true
                 local contentH = math.min(DropLayout.AbsoluteContentSize.Y + 16, 150)
@@ -925,7 +800,6 @@ function BloodLibrary:New(title, options)
                 Tween(DropFrame, {Size = UDim2.new(1, 0, 0, contentH)}, TweenInfo_Default)
                 Tween(Arrow, {Rotation = 180}, TweenInfo_Fast)
             end
-
             function DropObj:Add(option)
                 local OptionBtn = Make("TextButton", {
                     Size = UDim2.new(1, 0, 0, 26),
@@ -941,7 +815,6 @@ function BloodLibrary:New(title, options)
                     Parent = DropScroll,
                 })
                 AddCorner(OptionBtn, 4)
-
                 OptionBtn.MouseEnter:Connect(function()
                     Tween(OptionBtn, {BackgroundColor3 = Theme.TabActive, BackgroundTransparency = 0}, TweenInfo_Fast)
                 end)
@@ -956,16 +829,13 @@ function BloodLibrary:New(title, options)
                     pcall(callback, option)
                 end)
             end
-
             function DropObj:Set(option)
                 selected = option
                 HeaderLabel.Text = "[ " .. option .. " ]"
                 HeaderLabel.TextColor3 = Theme.TextAccent
                 pcall(callback, option)
             end
-
             function DropObj:Get() return selected end
-
             function DropObj:Clear()
                 for _, v in ipairs(DropScroll:GetChildren()) do
                     if v:IsA("TextButton") then v:Destroy() end
@@ -974,27 +844,18 @@ function BloodLibrary:New(title, options)
                 HeaderLabel.Text = text or "Dropdown"
                 HeaderLabel.TextColor3 = Theme.TextDim
             end
-
             for _, opt in ipairs(options) do DropObj:Add(opt) end
-
             Header.MouseButton1Click:Connect(function()
                 if open then CloseDropdown() else OpenDropdown() end
             end)
-            Header.MouseEnter:Connect(function()
-                Tween(Container, {BackgroundColor3 = Theme.ElementHover}, TweenInfo_Fast)
-            end)
-            Header.MouseLeave:Connect(function()
-                Tween(Container, {BackgroundColor3 = Theme.ElementBg}, TweenInfo_Fast)
-            end)
-
+            Header.MouseEnter:Connect(function() Tween(Container, {BackgroundColor3 = Theme.ElementHover}, TweenInfo_Fast) end)
+            Header.MouseLeave:Connect(function() Tween(Container, {BackgroundColor3 = Theme.ElementBg}, TweenInfo_Fast) end)
             return DropObj
         end
 
-        -- ── TEXTBOX ──
         function Tab:AddTextBox(placeholder, callback, options)
             callback = callback or function() end
             options = options or {}
-
             local Container = Make("Frame", {
                 Size = UDim2.new(1, 0, 0, 32),
                 BackgroundColor3 = Theme.ElementBg,
@@ -1004,7 +865,6 @@ function BloodLibrary:New(title, options)
             })
             AddCorner(Container, 6)
             AddStroke(Container, Theme.BorderDim, 1, 0.4)
-
             local TextInput = Make("TextBox", {
                 Size = UDim2.new(1, -16, 1, 0),
                 Position = UDim2.new(0, 8, 0, 0),
@@ -1020,29 +880,23 @@ function BloodLibrary:New(title, options)
                 ZIndex = 4,
                 Parent = Container,
             })
-
             TextInput.Focused:Connect(function()
                 Tween(Container, {BackgroundColor3 = Theme.ElementHover}, TweenInfo_Fast)
-                AddStroke(Container, Theme.Accent, 1.5, 0.1)
             end)
             TextInput.FocusLost:Connect(function(enterPressed)
                 Tween(Container, {BackgroundColor3 = Theme.ElementBg}, TweenInfo_Fast)
-                AddStroke(Container, Theme.BorderDim, 1, 0.4)
-                if enterPressed or options.OnChange then
+                if enterPressed then
                     pcall(callback, TextInput.Text)
                     if options.Clear then TextInput.Text = "" end
                 end
             end)
-
             return TextInput
         end
 
-        -- ── KEYBIND ──
         function Tab:AddKeybind(text, default, callback)
             callback = callback or function() end
             local currentKey = default or Enum.KeyCode.Unknown
             local binding = false
-
             local Row = Make("Frame", {
                 Size = UDim2.new(1, 0, 0, 32),
                 BackgroundColor3 = Theme.ElementBg,
@@ -1052,8 +906,7 @@ function BloodLibrary:New(title, options)
             })
             AddCorner(Row, 6)
             AddStroke(Row, Theme.BorderDim, 1, 0.4)
-
-            local KeyLabel = Make("TextLabel", {
+            Make("TextLabel", {
                 Size = UDim2.new(1, -90, 1, 0),
                 Position = UDim2.new(0, 10, 0, 0),
                 BackgroundTransparency = 1,
@@ -1065,7 +918,6 @@ function BloodLibrary:New(title, options)
                 ZIndex = 4,
                 Parent = Row,
             })
-
             local KeyBtn = Make("TextButton", {
                 Size = UDim2.new(0, 76, 0, 22),
                 Position = UDim2.new(1, -82, 0.5, -11),
@@ -1081,16 +933,13 @@ function BloodLibrary:New(title, options)
             })
             AddCorner(KeyBtn, 5)
             AddStroke(KeyBtn, Theme.Border, 1, 0.3)
-
             local KeyObj = {}
-
             local function SetKey(key)
                 currentKey = key
                 KeyBtn.Text = key == Enum.KeyCode.Unknown and "None" or key.Name
                 KeyBtn.TextColor3 = Theme.TextAccent
                 binding = false
             end
-
             KeyBtn.MouseButton1Click:Connect(function()
                 if binding then return end
                 binding = true
@@ -1104,33 +953,23 @@ function BloodLibrary:New(title, options)
                     end
                 end)
             end)
-
             UserInputService.InputBegan:Connect(function(input, processed)
                 if not processed and input.KeyCode == currentKey and not binding then
                     pcall(callback, currentKey)
                 end
             end)
-
-            Row.MouseEnter:Connect(function()
-                Tween(Row, {BackgroundColor3 = Theme.ElementHover}, TweenInfo_Fast)
-            end)
-            Row.MouseLeave:Connect(function()
-                Tween(Row, {BackgroundColor3 = Theme.ElementBg}, TweenInfo_Fast)
-            end)
-
+            Row.MouseEnter:Connect(function() Tween(Row, {BackgroundColor3 = Theme.ElementHover}, TweenInfo_Fast) end)
+            Row.MouseLeave:Connect(function() Tween(Row, {BackgroundColor3 = Theme.ElementBg}, TweenInfo_Fast) end)
             function KeyObj:Set(key) SetKey(key) end
             function KeyObj:Get() return currentKey end
-
             return KeyObj
         end
 
-        -- ── COLOR PICKER ──
         function Tab:AddColorPicker(text, default, callback)
             callback = callback or function() end
             local currentColor = default or Color3.fromRGB(180, 0, 0)
             local hue, sat, val = Color3.toHSV(currentColor)
             local pickerOpen = false
-
             local Container = Make("Frame", {
                 Size = UDim2.new(1, 0, 0, 32),
                 BackgroundColor3 = Theme.ElementBg,
@@ -1141,7 +980,6 @@ function BloodLibrary:New(title, options)
             })
             AddCorner(Container, 6)
             AddStroke(Container, Theme.BorderDim, 1, 0.4)
-
             local Header = Make("TextButton", {
                 Size = UDim2.new(1, 0, 0, 32),
                 BackgroundTransparency = 1,
@@ -1151,8 +989,7 @@ function BloodLibrary:New(title, options)
                 ZIndex = 9,
                 Parent = Container,
             })
-
-            local CLabel = Make("TextLabel", {
+            Make("TextLabel", {
                 Size = UDim2.new(1, -50, 1, 0),
                 Position = UDim2.new(0, 10, 0, 0),
                 BackgroundTransparency = 1,
@@ -1164,7 +1001,6 @@ function BloodLibrary:New(title, options)
                 ZIndex = 9,
                 Parent = Header,
             })
-
             local ColorPreview = Make("Frame", {
                 Size = UDim2.new(0, 22, 0, 22),
                 Position = UDim2.new(1, -32, 0.5, -11),
@@ -1175,8 +1011,6 @@ function BloodLibrary:New(title, options)
             })
             AddCorner(ColorPreview, 5)
             AddStroke(ColorPreview, Theme.Border, 1.5, 0.2)
-
-            -- Picker Panel
             local PickerPanel = Make("Frame", {
                 Size = UDim2.new(1, 0, 0, 0),
                 Position = UDim2.new(0, 0, 0, 34),
@@ -1188,8 +1022,6 @@ function BloodLibrary:New(title, options)
             })
             AddCorner(PickerPanel, 6)
             AddStroke(PickerPanel, Theme.Border, 1, 0.3)
-
-            -- Saturation/Value square
             local SatValFrame = Make("ImageLabel", {
                 Size = UDim2.new(1, -50, 0, 100),
                 Position = UDim2.new(0, 6, 0, 8),
@@ -1200,7 +1032,6 @@ function BloodLibrary:New(title, options)
                 Parent = PickerPanel,
             })
             AddCorner(SatValFrame, 4)
-
             local SVKnob = Make("Frame", {
                 Size = UDim2.new(0, 10, 0, 10),
                 AnchorPoint = Vector2.new(0.5, 0.5),
@@ -1212,8 +1043,6 @@ function BloodLibrary:New(title, options)
             })
             AddCorner(SVKnob, 999)
             AddStroke(SVKnob, Color3.fromRGB(0, 0, 0), 1.5, 0)
-
-            -- Hue bar
             local HueBar = Make("ImageLabel", {
                 Size = UDim2.new(0, 14, 0, 100),
                 Position = UDim2.new(1, -20, 0, 8),
@@ -1223,7 +1052,6 @@ function BloodLibrary:New(title, options)
                 Parent = PickerPanel,
             })
             AddCorner(HueBar, 4)
-
             local HueKnob = Make("Frame", {
                 Size = UDim2.new(1, 4, 0, 3),
                 Position = UDim2.new(0, -2, hue, 0),
@@ -1233,8 +1061,6 @@ function BloodLibrary:New(title, options)
                 Parent = HueBar,
             })
             AddCorner(HueKnob, 2)
-
-            -- Hex label
             local HexLabel = Make("TextLabel", {
                 Size = UDim2.new(1, -12, 0, 20),
                 Position = UDim2.new(0, 6, 0, 114),
@@ -1248,9 +1074,7 @@ function BloodLibrary:New(title, options)
                 Parent = PickerPanel,
             })
             AddCorner(HexLabel, 4)
-
             local ColorObj = {}
-
             local function UpdateColor()
                 currentColor = Color3.fromHSV(hue, sat, val)
                 ColorPreview.BackgroundColor3 = currentColor
@@ -1260,8 +1084,6 @@ function BloodLibrary:New(title, options)
                 HexLabel.Text = string.format("#%02X%02X%02X", math.floor(currentColor.R*255), math.floor(currentColor.G*255), math.floor(currentColor.B*255))
                 pcall(callback, currentColor)
             end
-
-            -- SatVal drag
             local draggingSV = false
             SatValFrame.InputBegan:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -1297,7 +1119,6 @@ function BloodLibrary:New(title, options)
                     end
                 end
             end)
-
             Header.MouseButton1Click:Connect(function()
                 pickerOpen = not pickerOpen
                 if pickerOpen then
@@ -1308,14 +1129,12 @@ function BloodLibrary:New(title, options)
                     Tween(PickerPanel, {Size = UDim2.new(1, 0, 0, 0)}, TweenInfo_Default)
                 end
             end)
-
             function ColorObj:Set(color)
                 currentColor = color
                 hue, sat, val = Color3.toHSV(color)
                 UpdateColor()
             end
             function ColorObj:Get() return currentColor end
-
             return ColorObj
         end
 
@@ -1325,44 +1144,4 @@ function BloodLibrary:New(title, options)
     return WindowObj
 end
 
--- ══════════════════════════════════════
--- EXPORT
--- ══════════════════════════════════════
 return BloodLibrary
-Paano gamitin:
-local Library = loadstring(game:HttpGet("YOUR_RAW_GITHUB_LINK"))()
-
-local Win = Library:New("My Script", {
-    MinSize = Vector2.new(520, 380),
-    ToggleKey = Enum.KeyCode.RightShift,
-})
-
-local Tab = Win:AddTab("Main")
-
-Tab:AddSection("Settings")
-
-Tab:AddToggle("God Mode", false, function(v)
-    print("Toggle:", v)
-end)
-
-Tab:AddSlider("Speed", 0, 500, 120, function(v)
-    print("Speed:", v)
-end)
-
-Tab:AddDropdown("Select Mode", {"Mode 1", "Mode 2", "Mode 3"}, function(v)
-    print("Selected:", v)
-end)
-
-Tab:AddButton("Click Me", function()
-    Win:Notify("Success!", "Button clicked!", 3)
-end)
-
-Tab:AddKeybind("Kill Aura", Enum.KeyCode.E, function()
-    print("Key pressed!")
-end)
-
-Tab:AddColorPicker("Accent Color", Color3.fromRGB(180,0,0), function(c)
-    print("Color:", c)
-end)
-
-Win:Notify("Loaded!", "Script loaded successfully!", 4)
